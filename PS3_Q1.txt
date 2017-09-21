@@ -1,0 +1,10 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1348\cocoasubrtf170
+{\fonttbl\f0\froman\fcharset0 TimesNewRomanPSMT;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww14100\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\sl480\slmult1\pardirnatural
+
+\f0\fs24 \cf0       Wilson\'92s paper talks about the suggestions for scientific computing  and the target audience are people in academia but not necessarily have a soft engineering background. I think all suggestions are legitimate, reasonable, and applicable. He mentioned that scientists should write code collaboratively, with one person writing and another person giving feedbacks. This is a particularly constructive suggestion since although scientist do work collaboratively, when it comes to write scripts, they tend to work individually. This happens to me during my undergrad research. Although projects are done collaboratively in general, individual part is still written separately. The only time people work on codes together is when it failed completely. \
+      Also, another aspect mentioned in the paper is to \'93make incremental changes.\'94 As many other \'93 non-computer science \'93scientists, I also found this hard to do. There\'92s always a clear goal of each project, for example, find the methylation pattern. It would be hard to break down the task at the very beginning, to construct your program piece by piece during the process. Also, unlike software engineers, the feedback loop is not constructed effectively for scientists when writing scripts, so people in academia tend to write the whole scripts all at once. Although it is hard to break down when programming, it is worthwhile to keep that suggestion in mind during the long run. \
+\
+     However, I found several sections in the paper are too \'93general.\'94 For example, use version control, use computer to store history and write readable codes. Those are the basic guidelines of writing any programs. Overall, the paper is straightforward and provides constructive suggestions. }
