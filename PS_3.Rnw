@@ -1,0 +1,233 @@
+\documentclass{article}
+
+\usepackage{graphicx}
+\title{Stat243: Problem Set 3}
+\author{Linqing Wei}
+
+
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\maketitle
+
+<<processing, echo=TRUE>>=
+#==============Problem 2(A) ===============
+download.file("http://www.gutenberg.org/cache/epub/100/pg100.txt", 
+              destfile = "SHAKE.txt")
+original_file  <- readLines('SHAKE.txt')
+#Trim the first and last chunks are trivial
+original_file = original_file[-c(1:2814,123979:length(original_file ))]
+#generate a character vector from the text file 
+original_file = paste(original_file, collapse = " ")
+#Split plays using "THE END" as a marker 
+plays = strsplit(original_file, "THE END")[[1]]  
+#37th element doesn't contain any play information, remove  
+plays = plays[-37]
+num_plays = length(plays)   #36 plays 
+print(num_plays)
+@
+
+
+
+
+
+
+
+<<Functional Funcs, echo=TRUE>>=
+#================Problem 2(B)==================
+library(stringr)
+library(gsubfn)
+#Housekeeping, remove all the texts within "<<>>", rm_extra is a cleaned file 
+rm_extra = gsub("<<[^>]*>>", "", plays)
+#Extract body part starting from "ACT"
+body = lapply(rm_extra, function(x) str_extract_all(x, ":?ACT.*")) 
+#Extract years
+year = lapply(rm_extra, function(x) unlist(str_extract_all(x, "[0-9]{3,}")))
+#Unique() in this case collaborates with length() to get the number of acts
+acts = lapply(rm_extra, function(x) length(unique(unlist(str_extract_all(x, 
+                          "(?:ACT)[[:space:]][[:upper:]]{1,}[.]")))))
+#Scenes either starts with"SCENE" or "Scene"
+scenes = lapply(rm_extra, function(x) length(unlist(str_extract_all(x, 
+    "((?:SCENE)|(?:Scene))[[:space:]][[:upper:]]{1,}[.]{0,}|((?:SCENE)|(Scene))
+     [[:space:]][1-9][.]{0,}"))))
+#exrtact titles 
+titles = strapplyc(rm_extra, "[0-9]{3,}[\n]*([^[:lower:]]{2,})") 
+#create dataframe, dimension = 4 rows(attributes) and 
+#36 variables (each variable is a play )
+play_table = rbind(year, titles, acts, scenes)
+play_table = matrix(play_table, nrow = 4, ncol = 36)
+play_table = as.data.frame(play_table)
+row.names(play_table) = c("year", "titles", "num_acts", "num_scenes")
+head(play_table)
+#NOW, put the body information into the dataframe 
+play_table = rbind(play_table, body)
+names(body) <- "body"
+#Since the full output would be too long,
+#only show the dimension of final dataframe
+dim(play_table)
+@
+
+
+
+
+
+<<test, echo=TRUE>>=
+#####============Problem 2(C)======================
+#To make sure this part of processing doesnt interfere the original file,
+#make a copy of the body parts 
+clean_file = body 
+#Extract the chunk parts after speaker's name
+output_chunk = lapply(clean_file, function(x) str_split(x, 
+    "[[:space:]]{2}[[:upper:]]{1}[[:alpha:]]{1,}[[:space:]]{0,}[[:upper:]]{1,}[.]"))
+#Extract stage information
+output_chunk = lapply(output_chunk, function(x) unlist(x)[-1])  
+output_chunk = lapply(output_chunk, function(x) x[-(grep("SCENE", x))]) 
+#Remove trailing spaces
+output_chunk = lapply(output_chunk, function(x) unlist(x)[grepl("[[:alpha:]]", unlist(x))])
+count_chunk = lapply(output_chunk, function(x) length(x)) 
+#NOTE: several plays do not have universal format, such as play#4 
+unlist(count_chunk)
+
+#Extract speaker names based on two spaces indentation
+output_name = lapply(clean_file, function(x) str_extract_all(x, 
+      "[[:space:]]{2}[[:upper:]]{2,}[[:space:]]{0,}[[:upper:]]{0,}[.]")) 
+output_name = lapply(output_name, function(x) unlist(x)) 
+#Extract unwanted names 
+output_name = lapply(output_name, function(x) 
+  x[-(grep("Exit|ACT|ALL|BOTH|EPILOGUE|Exeunt|SCENE", x))])
+unique_name = lapply(output_name, function(x) unique(x))
+count_name = lapply(unique_name, function(x) length(x)) 
+#NOTE: several plays without universal format fail to
+#generate names, eg.Romeo and Juliet, 
+unlist(count_name)
+@
+
+
+<<Statistics, echo=TRUE>>=
+####============Problem 2(D)===================
+#Get number of lines for each play
+num_lines = lapply(output_chunk, function(x) sum(str_count(x,'[[:alpha:]][.!?]')))
+unlist(num_lines)
+#Get number of words for each play
+all_words = lapply(output_chunk, function(x) str_split(x,'[[:space:]\n,.:;!?]'))
+#Remove the ones with only trailing spaces
+all_words = lapply(all_words, function(x) unlist(x)[grepl("[[:alpha:]]", unlist(x))])
+num_words = lapply(all_words, function(x) length(x))
+unlist(num_words)
+#Get number of unique words 
+num_unique_words = lapply(all_words, function(x) length(unique(x)))
+unlist(num_unique_words)
+#Compute number of words per chunk 
+words_per_chunck = unlist(num_words) / (unlist(count_chunk))
+unlist(words_per_chunck)
+@
+
+
+
+
+
+
+
+
+<<Plots, echo=TRUE, fig=TRUE, height=10>>=
+##=====================Problem 2(E)============================
+library(ggplot2)
+library(grid)
+library(gridExtra)
+#Create a plot_function to automate ploting for multiple graphs 
+plot_func <- function(yearX_axis, var_Yaxis, Yaxis_label){
+  df = data.frame(yearX_axis, var_Yaxis)
+  df = aggregate(var_Yaxis~yearX_axis, data = df, sum)
+  get_plot = ggplot(df, aes(x = yearX_axis, y = var_Yaxis, 
+    color = 'cut')) + geom_area() + labs(x = "year", y = Yaxis_label)
+  return(get_plot)
+  
+}
+#year vs number of plays
+plot_1 = plot_func(unlist(year), unlist(num_plays), "number of plays")
+#year vs number of acts
+plot_2 = plot_func(unlist(year), unlist(acts), "number of acts")
+#year vs number of scenes
+plot_3 = plot_func(unlist(year), unlist(scenes), "number of scenes")
+#year vs number of unique names 
+plot_4 = plot_func(unlist(year), unlist(count_name), "number of unique names")
+grid.arrange(plot_1, plot_2, plot_3, plot_4, ncol=2)
+
+#Based on the plots, 1595 and 1599 are the two years he wrote the most plays with
+#high number of scenes, acts and unique names. Especially in 1599, he was at a 
+#peak time, meaning that his play was the most sophisticated in that year.
+#Interestingly, although 1612 has the lowest number of production in every aespect,
+#he actually maintained a good amount of production right before 1612. 
+
+@
+
+
+
+
+
+\SweaveOpts{concordance=TRUE}
+=================Problem 2(F)=======================
+1. I split plays based on "THE END" rather than by year, which gave an accurate result
+2. When extracting the number of acts, I used length and unique function rather than 
+only regular expression to get the optimal output.
+3. My dataframe created in 2(b) is a bit different. Rather than making attributes as variables,
+I used each play as a variable. In this case, the data strcutre is a nested list in the dataframe.
+I could simply extract one varibale to analyze every attribute of it, which is neat and clean.
+4. When extracting chunks and names separately, I noticed that there're irregular patterns. The speaker
+may have a more than one-word name. "FIRST LORD." My solution avoided missing speaker names under this
+scenario. 
+5. I also did a second check "grepl" to remove all the trailing spaces so that unique 
+names won't count "" as a unique term
+6. I didn't use any for loop for text processing, but only apply functions 
+which make my program more efficient and run faster.
+7. Rather than ploting graphs one by one, I create a plot function and only pass in 
+vectors x and y axis, and the label string I need. This automated the ploting proces
+and removed tedious code, also ran faster. 
+
+
+
+
+<<Statistics, echo=TRUE>>=
+#######3(A)
+#Class List: PLAY, SubPlay, PlaySummary, MetaData       *MetaData is a "tool class" 
+#Inhearitance Structure: PLAY <-  SubPlay <- PlaySummary   *MetaData Class has no inheritance 
+
+
+#Class PLAY 
+#Fileds: Name(string), txt_input(a text file / character vector)
+#Methods: trim_plays(txt_input, trim_method) -> A list, each element is one play
+          #num_plays(play_list) -> total number of plays
+
+
+#Class SubPlay (Inherit from PLAY Class)
+#Fileds: PLAY.Name (string, get from PLAY class), PLAY.List (list, get from PLAY class), PLAY.Number(integer, get from PLAY class)
+#Methods: body(PLAY.list) -> A list, each element is a play's body
+          #split_chunk (PLAY.list) -> A list, each element is a play's chunk 
+          #split_names (PLAY.List) -> A list of speaker's names
+          #unique_names (Name.List) -> A list of unique names in each play 
+         #Meta.year(PLAY.list) -> A list, each element is the year of a play 
+         #Meta.acts(PLAY.list) -> A list, each element is the number of acts of a play 
+         #Meta.scenes(PLAY.list) -> A list, each element is the number of scenes of a play 
+         #Make_dataframe(year, acts, scenes, body) -> A dataframe with all the metadata
+          
+#Class Meta (Auxiliary Class, called by other classes) 
+#Fields: Play(character string), Chunk(character string )
+##Methods: 
+         #year(Play) -> return year
+         #acts(Play) -> return number of acts
+         #scenes(Play) -> return number of scenes 
+         
+        
+
+#Class PlaySummary (Inherit from SubPlay Class)
+#Fileds DataFrame(a dataframe of all metadatas )
+#chunk_list(list, chacteracter vector)
+#Methods:
+        #num_words(chunk_list) -> return number of words per play
+        #num_lines(chunk_list) -> return number of lines per play
+        #multi_plots(dataframe)  -> return a series of plots regarding the trends in plays 
+
+@
+
+
+\end{document}
