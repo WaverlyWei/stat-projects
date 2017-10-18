@@ -1,0 +1,108 @@
+\documentclass{article}
+
+\usepackage{graphicx}
+\title{Stat243: Problem Set 5}
+\author{Linqing Wei}
+
+
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\maketitle
+
+
+Problem 2
+
+1 = 1.0 * 2^(1023-1023) 
+2 = 1.0 * 2^(1024-1023)
+3 = 1.5 * 2 ^ (1024-1023)
+4 = 1.0 * 2^(1025-1023)
+2^53-2 = 1.0  * (2^(1076-1023))- 1.0 * (2^(1024-1023))
+2^53 = 1.0  * (2^(1076-1023))
+2^53+1 = 1.0 * (2^(1076-1023)) + 1.0 * (2^(1023-1023))
+2^53+2 = 1.0  * (2^(1076-1023)) + 1.0 * (2^(1024-1023))
+
+<<2, echo=TRUE>>=
+library(pryr)
+bits(1.0  * (2^(1076-1023))) #2^53
+bits(1.0  * (2^(1076-1023)) + 1.0 * (2^(1023-1023))) #2^53 + 1 
+bits(1.0  * (2^(1076-1023)) + 1.0 * (2^(1024-1023))) #2^53 + 2 
+
+bits(1.0  * (2^(1076-1023))) == bits(1.0  * (2^(1076-1023)) + 1.0 * (2^(1023-1023))) 
+#Since the bits of 2^53 are equal to the bits of 2^53 + 1, it means 2^53 + 1 cannot be represented exactly. 
+bits(1.0  * (2^(1076-1023))) == bits(1.0  * (2^(1076-1023)) + 1.0 * (2^(1024-1023))) 
+#Since the bits of 2^53 are not equal to the bits of 2^53 + 2, it means 2^53 + 2 can be represented exactly. 
+
+#The absolute spacingis xε so 2^54 ×2^(-52) =4.
+#0.5 * (10^16)
+bits(1.0  * (2^(1077-1023))) == bits(1.0  * (2^(1077-1023)) + 1.0 * (2^(1024-1023))) #2^54 +2 
+bits(1.0  * (2^(1077-1023))) == bits(1.0  * (2^(1077-1023)) + 1.0 * (2^(1025-1023))) #2^54 + 4
+bits(1.0  * (2^(1077-1023))) == bits(1.0  * (2^(1077-1023)) - 1.0 * (2^(1024-1023)))  # 2^54 -2
+bits(1.0  * (2^(1077-1023))) == bits(1.0  * (2^(1077-1023)) - 1.0 * (2^(1025-1023)))  # 2^54 -4
+
+bits(2^53) == bits(2^53 + 1)
+bits (2^53) == bits(2^53 +2)
+bits(2^54) ==bits (2^54+4)
+bits(2^54) * bits(2^-52)
+@
+
+
+
+Problem 3 
+<<3, echo=TRUE>>=
+#Part (a)
+a = as.integer(1:10000000)
+b = as.numeric(1:10000000)
+
+copy_int <- function(){
+  c = a
+}
+copy_num  <- function(){
+  d = b 
+}
+
+microbenchmark(copy_int)
+microbenchmark(copy_num)
+#It is faster to copy a large vector of integers than to copy a numeric vector, 
+#since each interger takes 4 bytes while each numeric value(double) takes 8 bytes. 
+
+
+##Part(b)##
+sub_int <- function(){
+ a[c(1:length(a)/2)]
+}
+sub_num <- function(){
+  b[c(1:length(b)/2)]
+}
+microbenchmark(sub_int)
+microbenchmark(sub_num)
+#It is faster to take a subset of size k = n/2 from an integer vector  than from a numeric vector, 
+#since each interger takes 4 bytes while each numeric value(double) takes 8 bytes. 
+
+
+@
+
+
+Problem 4 
+(a). The naive algorithm of running matrix column by column takes at least O(n^2) times of running. The parallel 
+computing algorithm takes O(np) times for partial matrix multiplication. Then summing up the partial results would take roughly O(log n) running times, which is more efficient. 
+
+
+(b). Approach A is better for minimizing communication. Each time submatrix of Y interacts with the whole matrix X. 
+The total communication times are p (or j, if you think about it in terms of number of tasks). However, each time, the whole matrix of x is passed into the function such that the memory usage is large for approach A, with at least p*objectsize(x) amout of memory. 
+
+Approach B is better for minimizing memory usage. Each time, only a subset of X and a subset of Y are passed into the
+function. However, the communication cost is high since the total number of partitioned blocks is large. It would take at least
+p^2 of communication times. 
+
+
+Extra Credit: 
+R uses IEEE754 scientic notation. For example, 0.1 has an index of -4, 0.2 has an index of -3 and 0.3 has an index of -2. 
+When summing up 0.1 and 0.2, R will change the index of 0.1 from -4 to -3 (rising the power),which leads to a change in floating points. 
+
+Originally: 0.1 = 1.1001100110011001100110011001100110011001100110011010. After change, 0.1 =  0.1100110011001100110011001100110011001100110011001101. After adjusting the floating point, 0.1 + 0.2 =  1.00110011001100110011001100110011001100110011001100111, which is different from the original representation of 0.3.
+
+However, 0.2 + 0.3 == 0.5 is true because when doing addition using IEEE754 scientific notation, we unify the index (power) of 0.2 and 0.3 as -2. After performing the similar addition as in "0.1 + 0.2" case, and readjust the floating point position, the final result of 0.5 is actually equal to the real representation of 0.5. 
+
+
+\end{document}
