@@ -1,0 +1,24 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1348\cocoasubrtf170
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww16460\viewh8880\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f0\fs24 \cf0 1. The goal of their simulation study is to propose a test procedure of testing the hypothesis of the number of components in a normal mixture. \
+    The metrics they consider are the simulated significance level of unadjusted/adjusted test and simulated power of unadjusted/adjusted test\
+\
+2. The authors have to decide the simulation sample size, what correction to be applied for the adjusted test, through which algorithm to obtain the maximum likelihood estimates, from which distribution to draw the random sample, etc. \
+    The number of drawn samples, the number of configurations, the values of mixing proportions and the chosen distance between two components might affect the statistical power of the test. \
+    When generating data, perhaps multiple datasets could be generated to test for small sample size data in order to normalize the results since when it comes to power test, small sample size with insufficient times of sampling could generate highly inflated results. \
+\
+3. Their tables provide sufficient information but there is no highlights marked in the table. It is not straightforward for readers to see the inference from the table directly. \
+    They could mark the highlights in the table or maybe present less amount of data to make the statement clear. \
+\
+4. Their results make sense in general but when sample size is less than 200 and D = 1, the results do not make sense. They inflate a lot rather than follow the steadily increasing pattern.\
+\
+5. When the simulating results seem reasonable, steady and follow the results in previous papers, then the authors decided to use 1000 simulations. \
+    10 simulations might be enough for large sample size but the size might not be enough to generalize the results of small-size samples. \
+    To decide whether or not 1000 samples are enough, we could sample more to see if the larger sample size generate better sampling results than 1000 samples. \
+\
+\
+}
