@@ -1,0 +1,82 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{eulervm}
+\usepackage{upgreek}
+
+
+\begin{document}
+\title{Stat243: Homework 7}
+\author{Linqing Wei}
+\maketitle
+\section{Problem 1}
+We compare the standard error \( \dfrac{s}{\sqrt{m}} \)with effect size to see if it correctly characterizes the uncertainty of the estimated regression coefficient. 
+
+\section{Problem 2}
+\begin{align*}
+A = \Gamma\Lambda\Gamma^{T}\\
+Az = \Gamma\Lambda(\Gamma^{T}z)\\
+{Az}^{T}(Az)=z^{T}A^{T}Az=z^{T}\Gamma\Lambda\Gamma^{T}\Gamma\Lambda\Gamma^{T}z=z^{T}\Gamma\Lambda\Lambda\Gamma^{T}z\\
+y=\Gamma^{T}z\\
+=y^{T}\Lambda^{2}y\\
+{||y||_{2}}^{2}=\sum{(\Gamma_{i1}z_{1}+...+\Gamma_{in}z_{n}})^{2}=\sum{{\Gamma_{i1}}^{2}{z_1}^{2}+...+\Gamma_{in}{z_n}^{2}} + 2\sum\Gamma_{ik}\Gamma_{il}z_{i}z_{l}\\
+k \neq l, ||z||_{2} = 1\\
+{||y||_{2}}^{2}={z_{1}}^{2}+...+{z_{n}}^{2}=1\\
+y^{T}{\Gamma}^{2}y= \sum{{y_{i}}^2{\Gamma_{i}}^{2}}\\
+||A||_2 = sup\sqrt{\sum{{y_{i}}^2{\Lambda_{i}}^{2}}}\\
+max{\Gamma_{i..n}}^{2} = {\Gamma_{k}}^{2}\\
+||A||_2 = ||\Gamma_{k}||\\
+\end{align*}
+Therefore, the norm A is the largest of the absolute value of the eigenvalues of A for symmetric A.
+
+\section{Problem 3}
+\subsection{3A}
+\begin{align*}
+X=USV^{T}\\
+X^{T}=VSU^{T}\\
+X^{T}X=VSU^{T}USV^{T}=VS^{2}V^{T}\\
+X^{T}XV=VS^{2}\\
+V^{T}(X^{T}X)V = {(XV)}^{T}XV = {||XV||_{2}}^{2} \geq 0 \\
+\end{align*}
+Therefore, \(X^{T}X \) is a positive definite matrix, so the SVD for \(X^{T}X \) is equal to eigendecomposition. \(VS^{2}V^{T}\) is the SVD of \(X^{T}X \), based on the definition of eigendecomposition, columns of V are eigenvectors of \(X^{T}X \). Also, columns of V are right singular vectors of X. In conclusion, the right singular vectors of X are eigenvectors of \(X^{T}X \). Since \(S^{2}\) 's diagnol elements are eigenvalues of \(X^{T}X \), S's diagnol elements are singular values of X, the eigenvalues of \(X^{T}X \) are squares of the singular values of X.
+
+
+\subsection{3B}
+\begin{align*}
+Zv=\lambda v\\
+(\sum + cI)v = \lambda v\\
+\sum v = (\lambda - c)v\\
+\end{align*}
+so \( \lambda -c \) is the eigenvalue of \( \sum \). The eigenvalues of Z can be computed by adding constant c to the eigenvalues of \(\sum \)
+
+
+\section{Problem 4}
+\subsection{Problem 4b}
+<<>>=
+Efficient_Solve <- function(X,Y,A,b){
+ C = crossprod(X)
+ d = crossprod(X,Y)
+ tmp1 = crossprod(solve(c,t(A)),t(A))
+ tmp2 = crossprod(solve(c, t(A)), d)
+ beta_hat = solve(c,d) + solve(c,crossprod(A,solve(tmp1, -tmp2+b)))
+ beta_hat
+}
+@
+
+\section{Problem 5}
+\subsection{5A}
+Instrument variables have an important property: The matrix of correlation between variables in X and the variables in Z is of maximum possible rank, meaning that we want X to retain only the correlation between X and Z. However, since X and Z are sparse matrixes, resulting X is also sparse, which would fail the expectation of stage 1 which is supposed to geenrate a matrix containing all the correlation items(fitted values) for the second stage. 
+
+\subsection{5B}
+Stage 1: Regress each variable in X on Z to obtain a matrix with fitted values. \\
+Stage 2: Regress y on X\\
+Key:Use Pz as an intermediate \\
+\begin{align*}
+Z(Z^{T}Z)^{-1}Z^{T}X = P_{z}X\\
+\beta = {(\hat{X}^{T}\hat{X})}^{-1}{X}^{T}y = {({X}^{T}{P_{z}}^{T}P_{z}X)}^{-1}X^{T}{P_{z}}^{T}y=({X}^{T}P_{z}X)X^{T}P_{z}y\\
+P_{z}^{T}P_z={[Z(Z^{T}Z)^{-1}Z^{T}]}^{T} = Pz
+\end{align*}
+Pseudocode: \\
+Compute \(P_{z} \)using spam package\\
+plug \(P_{z} \) into \(\beta \) equation\\
+return \(\beta \)\\
+\end{document}
