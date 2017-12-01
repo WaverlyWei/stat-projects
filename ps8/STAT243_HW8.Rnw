@@ -1,0 +1,194 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{eulervm}
+\usepackage{upgreek}
+
+
+\begin{document}
+\title{Stat243: Homework 8}
+\author{Linqing Wei}
+\maketitle
+\section{Problem 1}
+\subsection{1A}
+The heavy-tailed distribution is a distribution for which the pdf goes to zero for large x. Therefore, Pareto distribution is heavy-tailed and will decay slower than an exponential function. 
+
+\subsection{1B}
+<<warning=FALSE,message=FALSE>>=
+par(mfrow=c(2,2))
+library(EnvStats)
+#Set parameters m,alpha, beta
+m = 10000
+alpha = 2
+beta = 3
+#sample x from pareto distribution 
+x = rpareto(m, alpha, beta)
+#f is a shifted exp distribution
+#g is a pareto distribution calculated in an explicit form 
+f = exp(2-x)
+g = 24/(x^4)
+h = x
+#Estimate Ex
+Ex = (1/m) * sum(h*f/g)
+hist(h*f/g, main ="EX-h*f/g (Part b)")
+hist(f/g, main = "EX-f/g (Part b)")
+#Estimate EX^2
+h2 = x^2
+Ex2 = (1/m) * sum(h2*f/g)
+hist(h2*f/g, main ="EX^2-h*f/g (Part b)")
+hist(f/g, main ="EX^2-f/g (Part b)")
+@
+\noindent According to the histograms, estimator's variance is not too large. 
+
+\subsection{1C}
+<<warning=FALSE,message=FALSE>>=
+par(mfrow=c(2,2))
+library(rgl)
+library(tolerance)
+#x is now sampled from exp distribution 
+x = r2exp(10000, rate = 1, shift = 2)
+f = 24/(x^4)
+g = exp(2-x)
+h = x
+#Estimate EX
+Ex = (1/m) * sum(h*f/g)
+hist(h*f/g, main ="EX-h*f/g (Part c)")
+hist(f/g, main = "EX-f/g (Part c)")
+#Estimate EX^2
+h2 = x^2
+Ex2 = (1/m) * sum(h2*f/g)
+hist(h2*f/g, main ="EX^2-h*f/g (Part c)")
+hist(f/g, main ="EX^2-f/g (Part c)")
+@
+
+\section{Problem 2}
+<<warning=FALSE,message=FALSE>>=
+library(fields)
+theta <- function(x1,x2) atan2(x2, x1)/(2*pi)
+f <- function(x){
+  f1 <- 10*(3 - 10*theta(x[1],x[2]))
+  f2 <- 10*(sqrt(x[1]^2 + x[2]^2) - 1)
+  f3 <- 3
+  return(f1^2 + f2^2 + f3^2)
+}
+
+#X3 is the value chosen to be fixed 
+x1s = seq(-5, 5, len = 100)
+x2s = seq(0, 5, len = 100)
+fx = apply(expand.grid(x1s,x2s), 1, f)
+image.plot(x1s, x2s, matrix(log(fx), 100, 100))
+
+
+#Now find minimum without fixing any values 
+f_original <- function(x) {
+  f1 <- 10*(x[3] - 10*theta(x[1],x[2]))
+  f2 <- 10*(sqrt(x[1]^2 + x[2]^2) - 1)
+  f3 <- x[3]
+  return(f1^2 + f2^2 + f3^2)
+}
+
+#Try several sets of values, to see if there is a global min 
+init <- c(1, 1, 1)
+optim(init, f_original, method = "Nelder-Mead")$value
+nlm(f_original,init)$minimum
+
+init <- c(10, 20, 30)
+optim(init, f_original, method = "Nelder-Mead")$value
+nlm(f_original,init)$minimum
+
+init <- c(3, 50, 9)
+optim(init, f_original, method = "Nelder-Mead")$value
+nlm(f_original,init)$minimum
+
+@
+\noindent It is possible to get multiple local minima. 
+
+\section{Problem 3}
+\subsection{3C}
+<<>>=
+#Set parameter to generate yComplete dataset
+set.seed(1)
+n <- 100
+beta0 <- 1
+beta1 <- 2
+sigma <- 6
+x <- runif(n)
+yComplete <- rnorm(n, beta0 + beta1*x, sqrt(sigma))
+
+#EM function takes value of x, user defined dataset.
+#Rate means "proportion of exceedances expected" 
+EM <- function(x, data, rate){
+  n = length(data)
+  #Calculate total number of oberseved data
+  c = n - n*rate
+  #Sort observed data such that we only take the data below threshold
+  observed = sort(data)[1:c]
+  obs_x = runif(c)
+  #fitting linear model based on observed data
+  obsMod <- lm(observed ~ obs_x)
+  #Set starting 3 parameter values based on lm 
+  beta0_init = summary(obsMod)$coef[1]
+  beta1_init = summary(obsMod)$coef[2]
+  sigma_init = var(observed)
+  #create empty vectors for each parameter
+  RR <- c()
+  beta0 <- c()
+  beta1 <- c()
+  sigma <- c()
+  #resample data based on starting parameters
+  data_update <- rnorm(n, beta0_init + beta1_init*x, sqrt(sigma_init))
+  #Expectation step
+  for (i in 1:1000){
+    mod_update <- lm(data_update ~ x)
+    RR_i = summary(mod_update)$r.square
+    RR <- c(RR, RR_i)
+    beta0_i = summary(mod_update)$coef[1]
+    beta0 <- c(beta0, beta0_i)
+    beta1_i = summary(mod_update)$coef[2]
+    beta1 <- c(beta1, beta1_i)
+    sigma_i = var(data_update)
+    sigma <- c(sigma, sigma_i)
+    data_update <- rnorm(n, beta0_i + beta1_i, sqrt(sigma_i))
+  }
+  #After getting values from each E step, combine them into a matrix
+  par <- cbind(RR, beta0, beta1, sigma)
+  print(head(par))
+  #Maximization step
+  #in this case, we choose the row of parameters with minimum RRS
+  m = which.min(par[,1])
+  #The number of iterations 
+  print(m)
+  return(c(par[m,]))
+}
+#Test cases
+EM(x, yComplete, 0.2)
+EM(x, yComplete, 0.8)
+
+@
+
+\subsection{3D}
+<<>>=
+set.seed(2)
+#Similar setup to get initial values 
+BFGS <- function(x, data, rate){
+  n = length(data)
+  c = n - n*rate
+  observed = sort(data)[1:c]
+  obs_x = runif(c)
+  obsMod <- lm(observed ~ obs_x)
+  beta0_init = summary(obsMod)$coef[1]
+  beta1_init = summary(obsMod)$coef[2]
+  sigma_init = var(observed)
+ #Loglikelihood function to be optimized 
+  loglik_func <- function(par){
+    (-(n-c)/2)*log(2*pi)-((n-c)/2)*log(par[3]^2)-(1/2*(par[3]^2))*sum((observed-par[1]-par[2]*obs_x)^2)
+  }
+  #Optimization step using BFGS
+  init = c(beta0_init, beta1_init, sigma_init)
+  optim(init, loglik_func, method = 'BFGS')
+}
+#Test cases 
+BFGS(x, yComplete, 0.2)
+BFGS(x, yComplete, 0.8)
+@
+\noindent EM takes around 600~700 steps while BFGS takes 6~7 steps.
+\end{document}
